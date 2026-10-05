@@ -1,0 +1,41 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: Mini RAG API (Lambda + API Gateway) on a Bedrock Knowledge Base
+
+Parameters:
+  KnowledgeBaseId:
+    Type: String
+  ModelId:
+    Type: String
+    Default: amazon.nova-lite-v1:0
+
+Resources:
+  RagFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: lambda_function.handler
+      Runtime: python3.12
+      CodeUri: .
+      Timeout: 30
+      Environment:
+        Variables:
+          KB_ID: !Ref KnowledgeBaseId
+          MODEL_ID: !Ref ModelId
+      Policies:
+        - Statement:
+            - Effect: Allow
+              Action:
+                - bedrock:RetrieveAndGenerate
+                - bedrock:Retrieve
+                - bedrock:InvokeModel
+              Resource: '*'
+      Events:
+        Ask:
+          Type: Api
+          Properties:
+            Path: /ask
+            Method: post
+
+Outputs:
+  ApiUrl:
+    Value: !Sub https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/ask
